@@ -15,12 +15,7 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 					<ee:message>
 					</ee:message>
 					<ee:variables>
-						<ee:set-variable variableName="sourceFileName"><![CDATA[%dw 2.0
-output application/json
-var offset = p("sftp.oracle.read.dateOffSet") as String
-var period = ("P" ++ offset) as Period
----
-"Inventory_" ++ ((now()- (period)) as Date {format:'dd-MM-yyyy'} as String) ++ ".csv"]]></ee:set-variable>
+							<ee:set-variable resource="dwl/oracleSourceFileName.dwl" variableName="sourceFileName" />
 					</ee:variables>
 				</ee:transform>
 				<logger level="INFO" doc:name="log-start" doc:id="a75c94f8-4f0f-42d0-944e-8e9d78733eb9" message='#["Start of SFTP Read, Oracle WMS Directory"]' />
@@ -32,20 +27,7 @@ var period = ("P" ++ offset) as Period
 						<ee:message>
 						</ee:message>
 						<ee:variables>
-							<ee:set-variable variableName="errorData"><![CDATA[%dw 2.0
-output application/json
-var errorType = error.errorType..identifier joinBy (",") default "SFTP:CONNECTIVITY"
----
-write({
-	"errorDescription": (error.description as String) default "SFTP:CONNECTIVITY",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "SFTP:CONNECTIVITY",
-	"errorType": errorType,
-	"retriable": "No",
-	"application": p('application.name'),
-	"failingComponent": error.failingComponent default "Oracle WMS SFTP Read"
-
-},'application/json')]]></ee:set-variable>
+									<ee:set-variable resource="dwl/errorDataSftpRead.dwl" variableName="errorData" />
 						</ee:variables>
 					</ee:transform>
 							<logger level="ERROR" doc:name="log-error" doc:id="fab28345-3c92-4ceb-8fd4-7e05e28df2fb" message='#["Error, SFTP:ILLEGAL_PATH Occurred while calling SFTP READ, Oracle WMS SFTP, TraceId : " ++ ((vars.traceId) default "")]' />
@@ -59,17 +41,7 @@ write({
 					<ee:message>
 					</ee:message>
 					<ee:variables>
-						<ee:set-variable variableName="emailContent"><![CDATA[%dw 2.0
-output application/json
-var offset = p("sftp.oracle.read.dateOffSet") as String
-var period = ("P" ++ offset) as Period
----
-{	
-	"subject" : "Error Occurred while Reading content from the WMS Inventory file",
-	"fileName" : "Inventory_" ++ ((now()- (period)) as Date {format:'dd-MM-yyyy'} as String) ++ ".csv",
-	"traceId" : vars.traceId default correlationId,
-	"errorData" : vars.errorData default ""
-}]]></ee:set-variable>
+							<ee:set-variable resource="dwl/emailContentSftpRead.dwl" variableName="emailContent" />
 					</ee:variables>
 				</ee:transform>
 				<async doc:name="Async" doc:id="ae001dc1-2ada-4948-9c57-020b18232999">
@@ -93,26 +65,7 @@ payload]]]></sftp:content>
 					<ee:transform doc:name="errorData" doc:id="13596895-b552-446a-a518-86599c7bf064" >
 						<ee:message />
 						<ee:variables >
-							<ee:set-variable variableName="emailContent" ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"subject" : "Immediate Attention Required: Data Loss Warning",
-	"errorDetails" : write(({
-	"application": p('application.name'),
-	"SKU" : vars.invDetails.sku default "",
-	"Store" : vars.invDetails.store default "",
-	"fileName" : vars.fileName default "",
-	"traceId" : vars.traceId,
-	"retriable": "Yes",
-	"errorRecordsDirectory" : "oracle/from_mule/Inventory_Failed_" ++ (now() as Date {format:'dd-MM-yyyy'} as String) ++ ".csv",
-	"errorDetails" : "Error Occurred while writing to Oracle WMS Error Directory for more details, refer source file",
-	// A retry application can increment no. of external retries and terminate accordingly
-	"retryCount" : "0",
-	"failingComponent": error.failingComponent default "Oracle Error Directory Write(Append)"
-
-}),'application/json')
-}]]></ee:set-variable>
+							<ee:set-variable resource="dwl/emailContentOracleSftpWrite.dwl" variableName="emailContent" />
 						</ee:variables>
 					</ee:transform>
 					<async doc:name="Async" doc:id="9ea2fd9d-fc18-4e06-a761-f45600fad483" >

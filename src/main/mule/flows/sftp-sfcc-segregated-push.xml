@@ -19,23 +19,11 @@ http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/
 				<ee:message>
 				</ee:message>
 				<ee:variables>
-					<ee:set-variable variableName="emailContent"><![CDATA[%dw 2.0
-output application/json
----
-{
-	"subject" : "Invalid Records were found in Oracle the source file",
-	"errorDetails" : write(({
-	"application": p('application.name'),
-	"traceId" : vars.traceId,
-	"retriable": "No",
-	"invalidRecordsDirectory" : "sfcc/from_mule/Inventory_Invalid_" ++ (now() as String {format:'dd-MM-yyyy'}) ++ ".csv"
-
-}),'application/json')
-}]]></ee:set-variable>
 					<ee:set-variable variableName="isInvalidComm" ><![CDATA[%dw 2.0
 output application/java
 ---
 true]]></ee:set-variable>
+					<ee:set-variable resource="dwl/invalidRecordsEmailContent.dwl" variableName="emailContent" />
 				</ee:variables>
 			</ee:transform>
 			<async doc:name="Async" doc:id="c60c00f5-b41e-4e55-8a89-9ab240b7cab6" >

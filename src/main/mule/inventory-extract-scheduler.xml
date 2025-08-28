@@ -14,13 +14,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<ee:message >
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="traceId" ><![CDATA[%dw 2.0
-output application/json
----
-if(!isEmpty(vars.traceId))
-	vars.traceId 
-else
-	correlationId default (uuid()[0 to 17] ++ ":" ++ uuid()[0 to 17] ++ ":0:0" replace "-" with "")]]></ee:set-variable>
+				<ee:set-variable resource="dwl/traceIdScheduler.dwl" variableName="traceId" />
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="55549e03-7869-44a6-b747-debe936bac0a" message='#["Scheduler trigger detected, proceeding to check if the scheduler is enabled. TraceId: " ++ ((vars.traceId) default"")]'/>

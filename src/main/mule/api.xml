@@ -14,10 +14,7 @@
 			<ee:message >
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="traceId" ><![CDATA[%dw 2.0
-output application/json
----
-attributes.headers."trace-id" default(uuid()[0 to 17] ++ ":" ++ uuid()[0 to 17] ++ ":0:0" replace "-" with "")]]></ee:set-variable>
+				<ee:set-variable resource="dwl/traceIdGen.dwl" variableName="traceId" />
 			</ee:variables>
 		</ee:transform> 
         <apikit:router config-ref="oracle-inventory-extract-app-config"/>
@@ -27,14 +24,7 @@ attributes.headers."trace-id" default(uuid()[0 to 17] ++ ":" ++ uuid()[0 to 17] 
         <logger level="INFO" doc:name="log-start" doc:id="034f2b35-82cf-4a24-849b-a3af02b51954" message='#["Start of Ping HealtheCheck. TraceId : " ++ (vars.traceId default "")]'/>
 		<ee:transform doc:name="final Payload">
             <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  status: "ok",
-  appName: "oracle-inventory-sync-app(mule)",
-  appVersion: "v1"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+				<ee:set-payload resource="dwl/pingResponse.dwl" />
             </ee:message>
         </ee:transform>
 		<logger level="INFO" doc:name="log-end" doc:id="3f408e82-74bc-4b61-859d-bbdbd89f8964" message='#["End of Ping HealtheCheck. TraceId : " ++ (vars.traceId default "")]'/>

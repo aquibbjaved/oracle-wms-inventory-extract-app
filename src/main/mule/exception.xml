@@ -11,39 +11,8 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 			<ee:transform doc:name="Error Data" doc:id="cb428c1c-18a9-42ae-81f5-9180c27a8ead">
 				<ee:message />
 				<ee:variables>
-					<ee:set-variable variableName="errorData"><![CDATA[%dw 2.0
-output application/json
-var errorType = error.errorType..identifier joinBy (",") default "Internal Server Error"
----
-write({
-	"errorDescription": (error.description as String) default "Internal Server Error",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "Internal Server Error",
-	"errorType": errorType,
-	"retriable": "No",
-	"application": p('application.name'),
-	"failingComponent": error.failingComponent default "Oracle WMS SFTP Read"
-
-}, 'application/json')]]></ee:set-variable>
-					<ee:set-variable variableName="emailContent"><![CDATA[%dw 2.0
-output application/java
-var errorType = error.errorType..identifier joinBy (",") default "Internal Server Error"
-
----
-{
-	"subject" : "Error Occurred at Mule App Writing/Appending content to the Inventory file",
-	"storeName" : vars.invDetails.store default "",
-	"correlationID" : vars.traceId default correlationId,
-	"errorData" : {
-	"application": p('application.name'),
-	"errorDescription": (error.description) default "Internal Server Error",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "Internal Server Error",
-	"errorType": errorType,
-	"errorDetails" : "Please Check Oracle WMS Error Directory for more details",
-	"failingComponent": error.failingComponent default "SFCC SFTP Write(Append)"
-	}
-}]]></ee:set-variable>
+					<ee:set-variable resource="dwl/emailContentCommonError.dwl" variableName="emailContent" />
+					<ee:set-variable resource="dwl/errorDataCommonError.dwl" variableName="errorData" />
 				</ee:variables>
 			</ee:transform>
 			<logger level="INFO" doc:name="Logger" doc:id="c344e0e2-a471-4665-84c3-7a4a948fa5ab" message='#["Error Occured  : " ++ (vars.errorData default "") ++ ", TraceId : " ++ ((vars.traceId) default "")]' />
@@ -56,20 +25,9 @@ var errorType = error.errorType..identifier joinBy (",") default "Internal Serve
 		<on-error-propagate type="APIKIT:BAD_REQUEST">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-	message: "Bad request",
-	"errorDescription": (error.description as String) default "BAD_REQUEST",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "BAD_REQUEST",
-	"retriable": "No",
-	"application": p('application.name'),
-	"failingComponent": error.failingComponent default "APIKIT Rules"	
-	
-}]]></ee:set-payload>
-                    </ee:message>
+					<ee:set-payload resource="dwl/badRequestApiKit.dwl" />
+                    
+</ee:message>
                     <ee:variables>
                         <ee:set-variable variableName="httpStatus"><![CDATA[400]]></ee:set-variable>
                     </ee:variables>
@@ -79,20 +37,9 @@ output application/json
             <on-error-propagate type="APIKIT:NOT_FOUND">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-	message: "No APIKIT Found",
-	"errorDescription": (error.description as String) default "APIKIT:NOT_FOUND",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "APIKIT:NOT_FOUND",
-	"retriable": "No",
-	"application": p('application.name'),
-	"failingComponent": error.failingComponent default "APIKIT Router"	
-	
-}]]></ee:set-payload>
-                    </ee:message>
+					<ee:set-payload resource="dwl/notFoundApiKit.dwl" />
+                    
+</ee:message>
                     <ee:variables>
                         <ee:set-variable variableName="httpStatus"><![CDATA[404]]></ee:set-variable>
                     </ee:variables>
@@ -102,20 +49,9 @@ output application/json
             <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-	message: "Method Not Allowed",
-	"errorDescription": (error.description as String) default "APIKIT:Method_Not_Allowed",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "APIKIT:Method_Not_Allowed",
-	"retriable": "No",
-	"application": p('application.name'),
-	"failingComponent": error.failingComponent default "APIKIT:Method_Not_Allowed"	
-	
-}]]></ee:set-payload>
-                    </ee:message>
+					<ee:set-payload resource="dwl/notAllowedApiKit.dwl" />
+                    
+</ee:message>
                     <ee:variables>
                         <ee:set-variable variableName="httpStatus"><![CDATA[405]]></ee:set-variable>
                     </ee:variables>
@@ -125,20 +61,9 @@ output application/json
             <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-	message: "Not Acceptable",
-	"errorDescription": (error.description as String) default "APIKIT:Not_Acceptable",
-	"errorSeverity": "CRITICAL", 
-	"errorStackTrace": error.cause as String default "APIKIT:Not_Acceptable",
-	"retriable": "No",
-	"application": p('application.name'),
-	"failingComponent": error.failingComponent default "APIKIT:Not_Acceptable"	
-	
-}]]></ee:set-payload>
-                    </ee:message>
+					<ee:set-payload resource="dwl/notAcceptableApiKit.dwl" />
+                    
+</ee:message>
                     <ee:variables>
                         <ee:set-variable variableName="httpStatus"><![CDATA[406]]></ee:set-variable>
                     </ee:variables>
@@ -148,13 +73,11 @@ output application/json
             <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Unsupported media type"}]]></ee:set-payload>
-                    </ee:message>
+					<ee:set-payload resource="dwl/unsupportedMediaTypeApiKit.dwl" />
+                    
+</ee:message>
                     <ee:variables>
-                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[415]]></ee:set-variable>
                     </ee:variables>
                 </ee:transform>
             
@@ -162,13 +85,11 @@ output application/json
             <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not Implemented"}]]></ee:set-payload>
-                    </ee:message>
+					<ee:set-payload resource="dwl/notImplementedApiKit.dwl" />
+                    
+</ee:message>
                     <ee:variables>
-                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[501]]></ee:set-variable>
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>

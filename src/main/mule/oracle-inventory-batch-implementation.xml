@@ -40,11 +40,6 @@ payload]]></ee:set-payload>
 						<ee:message>
 						</ee:message>
 						<ee:variables>
-							<ee:set-variable variableName="fileName"><![CDATA[%dw 2.0
-var storeId = payload."StoreId" default ""
-output application/json
----
-"from_mule/Inventory" ++ "_" ++ (storeId as String) ++ "_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv"]]></ee:set-variable>
 									<ee:set-variable variableName="invDetails" ><![CDATA[%dw 2.0
 output application/java
 ---
@@ -52,6 +47,7 @@ output application/java
 	"sku" : payload."SKU" default "",
 	"store" : payload."StoreId" default ""
 }]]></ee:set-variable>
+									<ee:set-variable resource="dwl/validFileName.dwl" variableName="fileName" />
 						</ee:variables>
 					</ee:transform>
 					<flow-ref doc:name="Write(Append) SFCC SFTP" doc:id="ae26cc7f-04df-40b1-af9f-33f3883c859f" name="sfcc-sftp-push-subflow" />
@@ -61,10 +57,6 @@ output application/java
 						<ee:message>
 						</ee:message>
 						<ee:variables>
-							<ee:set-variable variableName="fileName"><![CDATA[%dw 2.0
-output application/json
----
-"from_mule/Inventory_Invalid_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv"]]></ee:set-variable>
 									<ee:set-variable variableName="invDetails" ><![CDATA[%dw 2.0
 output application/json
 ---
@@ -72,6 +64,7 @@ output application/json
 	"sku" : payload."SKU" default "",
 	"store" : payload."StoreId" default ""
 }]]></ee:set-variable>
+									<ee:set-variable resource="dwl/invalidFileName.dwl" variableName="fileName" />
 						</ee:variables>
 					</ee:transform>
 					<flow-ref doc:name="Write(Append) SFCC SFTP" doc:id="e7db0737-afd3-4251-8900-1cc78aaa01a7" name="sfcc-sftp-push-subflow" />
@@ -81,10 +74,6 @@ output application/json
 								<ee:message >
 								</ee:message>
 								<ee:variables >
-									<ee:set-variable variableName="fileName" ><![CDATA[%dw 2.0
-output application/json
----
-"from_mule/Inventory_Failed_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv"]]></ee:set-variable>
 									<ee:set-variable variableName="invDetails" ><![CDATA[%dw 2.0
 output application/json
 ---
@@ -92,6 +81,7 @@ output application/json
 	"sku" : payload."SKU" default "",
 	"store" : payload."StoreId" default ""
 }]]></ee:set-variable>
+									<ee:set-variable resource="dwl/errorFileName.dwl" variableName="fileName" />
 								</ee:variables>
 							</ee:transform>
 							<flow-ref doc:name="Write(Append) Oracle SFTP for Redelivery " doc:id="8f1d8867-6459-4e9a-bd9b-c62b16b24e11" name="sftp-oracle-wms-error-push-subflow"/>
@@ -100,17 +90,7 @@ output application/json
 					<batch:on-complete >
 						<ee:transform doc:name="Metrics" doc:id="739f4873-a869-40af-b7dd-e2f1e9bcfecf" >
 							<ee:message >
-								<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"traceId": vars.traceId default uuid(),
-	"jobInstanceId" : payload.jobInstanceId default"",
-	"totalRecords" : payload.totalRecords default "",
-	"loadedRecords" : payload.loadedRecords default "",
-	"failedRecords" : payload.failedRecords default "",
-	"state" : payload.state default""
-}]]></ee:set-payload>
+								<ee:set-payload resource="dwl/batchOnCompleteMetrics.dwl" />
 							</ee:message>
 						</ee:transform>
 						<scatter-gather doc:name="Scatter Gather" doc:id="b0ca10b2-b1c1-403d-afba-dd8442a99219" >
@@ -128,24 +108,7 @@ output application/json
 									<ee:message>
 									</ee:message>
 									<ee:variables>
-										<ee:set-variable variableName="emailContent"><![CDATA[%dw 2.0
-output application/json
----
-{
-	"subject" : "Alert: Issues Encountered During Today’s Inventory Data Sync-up",
-	"errorDetails" : write(({
-	"application": p('application.name'),
-	"traceId" : vars.traceId,
-	"runMetrics" : write(payload default {},'application/json'),
-	"retriable": "Yes",
-	"errorRecordsDirectory" : "oracle/from_mule/Inventory_Failed_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv",
-	"errorDetails" : "Please Check Oracle WMS Error Directory for more details",
-	// A retry application can increment no. of external retries and terminate accordingly
-	"retryCount" : "0",
-	"failingComponent": error.failingComponent default "SFCC SFTP Write(Append)"
-
-}),'application/json')
-}]]></ee:set-variable>
+													<ee:set-variable resource="dwl/erroredRecordsEmailContent.dwl" variableName="emailContent" />
 									</ee:variables>
 								</ee:transform>
 											<flow-ref doc:name="Trigger Email on the failed Records" doc:id="182de83c-d246-4900-8475-bcc01698764a" name="smtp-send-email-notification-subflow" />
