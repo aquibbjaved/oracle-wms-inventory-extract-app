@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="sftp-sfcc-segregated-push-test-suite.xml" />
+	<munit:test name="sftp-sfcc-segregated-push-test-suite-sftp-sfcc-extract-invalid-file-subflowTest" doc:id="8e09c180-a366-475f-aa60-b6f405079c26" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock List Invalid File" doc:id="2d85d424-07eb-403b-9354-01021abd755e" processor="sftp:list">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="List Today's Invalid File" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<flow-ref doc:name="Flow-ref to sftp-sfcc-extract-invalid-file-subflow" doc:id="bad856da-fa90-4c71-8ba4-313ab157632f" name="sftp-sfcc-extract-invalid-file-subflow" />
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="d9189541-0710-4b99-9aec-bdd8855e8c8c" processor="logger">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="log-error" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

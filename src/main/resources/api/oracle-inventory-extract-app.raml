@@ -1,0 +1,31 @@
+#%RAML 1.0
+title: oracle-inventory-extract-app
+description: The Oracle Inventory Extract application facilitates the sync up of per store inventory details fetched from Oracle WMS SFTP to SFCC for the e-comm systems
+
+protocols:
+  - HTTPS
+  - HTTP
+
+mediaType: 
+- application/json
+
+traits:
+  client-credentials: !include traits/client-credentials.raml
+  traceId: !include traits/traceId.raml
+  errorTrait: !include traits/errorTrait.raml
+
+securitySchemes:
+  client-credentials:
+      type: x-client-credentials
+      description: Use application client_id and client_secret assigned by the admin.
+
+/healthcheck:
+    /ping:
+      is: [client-credentials, traceId, errorTrait]
+      get:
+        description: This can be requested by anyone who doesnt have access to the Anypoint Platform and wants to get a simple healthcheck on the application
+        responses:
+            200:
+              body:
+                example: !include examples/PingResponse.json
+                  

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<sub-flow name="sftp-oracle-wms-csvfile-read-subflow" doc:id="7fc7369d-cddd-4623-8b96-4ca3bcf4ac52" >
+		<try doc:name="Try" doc:id="40a7bdef-4a3a-4895-8a16-d4aac2ec20d6" >
+			<until-successful maxRetries="${sftp.retry.attempts}" doc:name="Until Successful" doc:id="8f89aa92-89b2-4165-860c-d1309e976807" millisBetweenRetries="${sftp.retry.frequency}">
+			<try doc:name="Try" doc:id="8326b79c-e0d7-45c1-8c6d-093f2fe5907d">
+				<ee:transform doc:name="Source File Name" doc:id="fe8a023a-f214-49b4-a714-8a5c172a110f">
+					<ee:message>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="sourceFileName"><![CDATA[%dw 2.0
+output application/json
+var offset = p("sftp.oracle.read.dateOffSet") as String
+var period = ("P" ++ offset) as Period
+---
+"Inventory_" ++ ((now()- (period)) as Date {format:'dd-MM-yyyy'} as String) ++ ".csv"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<logger level="INFO" doc:name="log-start" doc:id="a75c94f8-4f0f-42d0-944e-8e9d78733eb9" message='#["Start of SFTP Read, Oracle WMS Directory"]' />
+				<sftp:read doc:name="Read Oracle SFTP" doc:id="9e410fc2-bb37-4b05-890e-2b734da46675" config-ref="SFTP_Config_Oracle_Read" path="#[vars.sourceFileName]" outputMimeType="application/csv; streaming=true">
+				</sftp:read>
+					<error-handler>
+						<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2c7d122e-cf6d-47f9-9681-6a64ada50bb4">
+							<ee:transform doc:name="Error Data" doc:id="ea1b14c5-fc02-4c45-b01f-b26829a0322f">
+						<ee:message>
+						</ee:message>
+						<ee:variables>
+							<ee:set-variable variableName="errorData"><![CDATA[%dw 2.0
+output application/json
+var errorType = error.errorType..identifier joinBy (",") default "SFTP:CONNECTIVITY"
+---
+write({
+	"errorDescription": (error.description as String) default "SFTP:CONNECTIVITY",
+	"errorSeverity": "CRITICAL", 
+	"errorStackTrace": error.cause as String default "SFTP:CONNECTIVITY",
+	"errorType": errorType,
+	"retriable": "No",
+	"application": p('application.name'),
+	"failingComponent": error.failingComponent default "Oracle WMS SFTP Read"
+
+},'application/json')]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+							<logger level="ERROR" doc:name="log-error" doc:id="fab28345-3c92-4ceb-8fd4-7e05e28df2fb" message='#["Error, SFTP:ILLEGAL_PATH Occurred while calling SFTP READ, Oracle WMS SFTP, TraceId : " ++ ((vars.traceId) default "")]' />
+						</on-error-propagate>
+					</error-handler>
+			</try>
+		</until-successful>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="de4266a8-0ba9-4ae3-969a-8ac7e60a165c" type="ANY">
+				<ee:transform doc:name="Generate Email Content" doc:id="24762adc-a019-4af2-a2bc-1ba99bcf29ca">
+					<ee:message>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="emailContent"><![CDATA[%dw 2.0
+output application/json
+var offset = p("sftp.oracle.read.dateOffSet") as String
+var period = ("P" ++ offset) as Period
+---
+{	
+	"subject" : "Error Occurred while Reading content from the WMS Inventory file",
+	"fileName" : "Inventory_" ++ ((now()- (period)) as Date {format:'dd-MM-yyyy'} as String) ++ ".csv",
+	"traceId" : vars.traceId default correlationId,
+	"errorData" : vars.errorData default ""
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<async doc:name="Async" doc:id="ae001dc1-2ada-4948-9c57-020b18232999">
+					<flow-ref doc:name="Send Error Notification" doc:id="d7af4a12-7e8a-4e88-98b5-4068f38f8941" name="smtp-send-email-notification-subflow" />
+				</async>
+			</on-error-continue>
+			</error-handler>
+		</try>
+	</sub-flow>
+	<sub-flow name="sftp-oracle-wms-error-push-subflow" doc:id="c0fbaa17-1155-4375-8012-13785ce30573" >
+		<try doc:name="Try" doc:id="2a04da30-1408-44c8-b518-973ea71299b3" >
+			<sftp:write doc:name="SFTP Write Oracle Error Directory" doc:id="1552bd51-4199-470d-816b-ed5a840299fb" config-ref="SFTP_Config_Oracle_Write" path='#[vars.fileName default ""]' mode="APPEND" >
+				<sftp:content ><![CDATA[#[%dw 2.0
+output application/csv header=false
+---
+payload]]]></sftp:content>
+			</sftp:write>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1184567b-fd97-4c0b-ad79-ce7c52ccaef9" type="ANY">
+					<logger level="ERROR" doc:name="log-error" doc:id="5d4391fe-10ed-42ed-9c91-07d9a4ea50f7" message='#["FATAL : Error Occured while calling SFTP Write, Oracle Error Directory : " ++ (((error.description) as String) default "")]' />
+					<ee:transform doc:name="errorData" doc:id="13596895-b552-446a-a518-86599c7bf064" >
+						<ee:message />
+						<ee:variables >
+							<ee:set-variable variableName="emailContent" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"subject" : "Immediate Attention Required: Data Loss Warning",
+	"errorDetails" : write(({
+	"application": p('application.name'),
+	"SKU" : vars.invDetails.sku default "",
+	"Store" : vars.invDetails.store default "",
+	"fileName" : vars.fileName default "",
+	"traceId" : vars.traceId,
+	"retriable": "Yes",
+	"errorRecordsDirectory" : "oracle/from_mule/Inventory_Failed_" ++ (now() as Date {format:'dd-MM-yyyy'} as String) ++ ".csv",
+	"errorDetails" : "Error Occurred while writing to Oracle WMS Error Directory for more details, refer source file",
+	// A retry application can increment no. of external retries and terminate accordingly
+	"retryCount" : "0",
+	"failingComponent": error.failingComponent default "Oracle Error Directory Write(Append)"
+
+}),'application/json')
+}]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+					<async doc:name="Async" doc:id="9ea2fd9d-fc18-4e06-a761-f45600fad483" >
+						<flow-ref doc:name="Send Email" doc:id="879c990a-98ff-4022-a065-a9cb8e3cbed9" name="smtp-send-email-notification-subflow"/>
+					</async>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<remove-variable doc:name="Remove Variable (inventoryDetail)" doc:id="19fbf945-5b2f-4113-84e7-e8f12506d451" variableName="invDetails" />
+		<remove-variable doc:name="Remove Variable (fileName)" doc:id="ede6fc1c-f20e-4d06-a42a-aca54338012e" variableName="fileName" />
+		<logger level="INFO" doc:name="log-end" doc:id="e2c6da8b-ac4b-452f-8780-9abc5de83247" message='#["End of Write(Append) Error Directory Oracle WMS, inside Batch_Step_Failure_Records. TraceId : " ++ ((vars.traceId) default"")]' />
+	</sub-flow>
+</mule>

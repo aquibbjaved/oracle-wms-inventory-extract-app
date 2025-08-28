@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	
+	<sub-flow name="smtp-send-email-notification-subflow" doc:id="17de35c8-5ee5-482a-81bb-7d1b3abbff30" >
+		<try doc:name="Try" doc:id="72598377-eb8a-47d1-be3b-068cf1a1fe71" >
+			<until-successful maxRetries="${emailSMTP.retry.attempts}" doc:name="Until Successful" doc:id="5a99d942-60d2-49b7-9e13-b7c8e7cd8251" millisBetweenRetries="${emailSMTP.retry.frequency}">
+				<email:send doc:name="Send" doc:id="60f1fe96-57ea-4045-a52b-e8da1fbedfa5" toAddresses="#[(p('emailSMTP.toAddresses') splitBy &quot;,&quot;)]" config-ref="Email_SMTP" fromAddress="#[(p('emailSMTP.fromAddress'))]" ccAddresses="#[(p('emailSMTP.ccAddresses') splitBy &quot;,&quot;)]" subject='#[vars.emailContent.subject default "[]"]'>
+					<email:body contentType="text/html" encoding="UTF-8">
+						<email:content ><![CDATA[#[if(vars.isInvalidComm default false)
+'<!DOCTYPE html>
+<html>
+  <body>
+    <p>Hello &amp; Greetings,</p>
+    <p>Error(s) has occurred while syncing Store Level Inventory Data from Oracle WMS to SFCC.<br/>
+    Please refer attached document for more details.</p>
+    
+    <p style="color:gray; font-size:small; font-style:italic;">
+      This is an automated Email. Replies to this will not be monitored.
+    </p>
+    
+    <p>Thanks &amp; Regards,<br/>
+    Messaging Management Team</p>
+  </body>
+</html>'
+else
+	'<!DOCTYPE html>
+<html>
+  <body>
+    <p>Hello &amp; Greetings,</p>
+    <p>Invalid Records were found while syncing Store Level Inventory Data from Oracle WMS to SFCC.<br/>
+    Please refer attached document for more details & take appropriate actions.</p>
+    
+    <p style="color:gray; font-size:small; font-style:italic;">
+      This is an automated Email. Replies to this will not be monitored.
+    </p>
+    
+    <p>Thanks &amp; Regards,<br/>
+    Messaging Management Team</p>
+  </body>
+</html>']]]></email:content>
+					</email:body>
+					<email:attachments ><![CDATA[#[{
+	"errorDetails.json" : write((vars.emailContent default {}),'application/json')
+}]]]></email:attachments>
+				</email:send>
+			</until-successful>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="8e63645b-b362-4987-830a-63eb9e37bee7" >
+					<logger level="ERROR" doc:name="log-error" doc:id="8f19f64f-bf03-4cf4-89e1-b57d0b2770bf" message='#["SMTP Send Email errored out. TraceID : " ++ (vars.traceId default "")]'/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</sub-flow>
+</mule>

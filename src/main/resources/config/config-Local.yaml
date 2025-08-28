@@ -1,0 +1,78 @@
+######## Application Parameters ############
+application:
+      name: "oracle-inventory-extract-application"
+api:
+  id: ""
+
+####### HTTP Listener Properties ###########
+https:
+  listener:
+      host: "0.0.0.0"
+      port: "8081"
+      path: "/api/v1/*"
+
+######## Scheduler #########################
+scheduler:
+      cron: "0 0 4 * * ?"
+      timeZone: "UTC"
+      status: "online"
+
+######### Batch Job Configurations ##########
+batch:
+    block-size: "100"
+    max-concurrency: "16"
+    
+######### SFTP Connection Configurations #########################################
+sftp:
+    ########## Hosted At CouchDrop OpenSource SFTP ###############
+    oracle:
+        read: 
+            host: "inventory.couchdrop.io"
+            port: "22"
+            username: "user_b2q59uzhd54yn9bp"
+            password: "![emcS586SR5myPUlb2HWBEdO/zVbpB0wvazakMPPgXPU=]"
+            workingDirectory: "/"
+            ###### In case Reprocessing is needed for a earlier Dated File ##########
+            dateOffSet: "0D"
+        ########## Hosted At Local Computer Via OpenSSH ###########
+        write:
+            host: "![T63fbBAWh3IJYWtFk66x/w==]"
+            port: "22"
+            username: "![C4HJMCLGDp9tl98p4Ie2qg==]"
+            password: "![AFWjY11HdaYrBb8EYLFoAQ==]"
+            workingDirectory: "C:/Users/aaquib/oracle"  
+    ########## Hosted At Local Computer Via OpenSSH ###########
+    sfcc:
+        mocked: "false"
+        host: "![T63fbBAWh3IJYWtFk66x/w==]"
+        port: "22"
+        username: "![C4HJMCLGDp9tl98p4Ie2qg==]"
+        password: "![AFWjY11HdaYrBb8EYLFoAQ==]"
+        workingDirectory: "C:/Users/aaquib/sfcc" 
+        mockHttpServer : "68addf3ca0b85b2f2cf4ee22.mockapi.io"
+        mockHttpServerPath: "api/v1/sfcc"
+          
+    #### Retry/Reconnection Configuration #########################
+    retry:
+        attempts: "2"
+        frequency: "5000"
+    reconnection:
+        attempts: "2"
+        frequency: "5000"
+    responseTimeout: "30000" 
+    
+    
+############ Email SMTP Configurations #############################
+emailSMTP:
+     host: "smtp.gmail.com"
+     port: "587"
+     username: "![U/QKPbl0udrG39PvJkB3lMTtV6r1ZzHzc0Ye4QUwfsc=]"
+     password: "![hzj8CFHKl7A5/1imDj9zhprBx8UZNSTNxrYUQjRXXhg=]"
+     fromAddress: "98sleo@gmail.com"
+     toAddresses: "aquibbjaved@gmail.com"
+     ccAddresses: "ajaved1008@gmail.com"
+     #### Retry/Reconnection Configuration #########################
+     retry:
+        attempts: "2"
+        frequency: "5000"
+   

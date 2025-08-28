@@ -1,0 +1,4 @@
+{
+  "errorMessage": "Resource Not Found, check the requested endpoint or resource ID",
+  "statusCode": "404"
+}
