@@ -9,41 +9,46 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd">
 	
-	<sub-flow name="sftp-sfcc-extract-invalid-file-subflow" doc:id="838747db-6dd3-4f6d-8060-0de5dc185d49" >
-		<try doc:name="Try" doc:id="d69afd09-6395-460d-95ed-ae2de1466679" >
-			<sftp:list doc:name="List Today's Invalid File" doc:id="d1c5a9e7-f097-4ed5-a155-d79bed34011c" config-ref="SFTP_Config_SFCC_Read" directoryPath="#[p('sftp.sfcc.workingDirectory') ++ &quot;/from_mule&quot;]">
+	<sub-flow name="sftp-sfcc-extract-invalid-file-subflow" doc:id="e4e57024-ca5d-41c6-9b60-344acbf60fed" >
+		<try doc:name="Try" doc:id="7d80e1fd-0f72-4637-91a0-196bd91c3a80" >
+			<sftp:list doc:name="List Today's Invalid File" doc:id="9c40a76f-49b7-4841-8551-8b188fdbd8ab" config-ref="SFTP_Config_SFCC_Read" directoryPath="#[p('sftp.sfcc.workingDirectory') ++ &quot;/from_mule&quot;]">
 			<sftp:matcher filenamePattern='#["Inventory_Invalid_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv"]' />
 		</sftp:list>
-			<logger level="INFO" doc:name="log-audit" doc:id="363334af-3561-4917-af61-03654c054a3c" message='#["Invalid File for today has been listed Successfully. Proceeding to send Email. TraceId : " ++ (vars.traceId default"")]'/>
-			<ee:transform doc:name="email Content" doc:id="1fb3e60d-2966-4a40-a566-deff6947f82a">
+			<choice doc:name="Check file found ?" doc:id="04381c4e-1cb8-45f2-aa2d-8e65fa91a012" >
+				<when expression="#[%dw 2.0&#10;output application/json&#10;---&#10;!isEmpty(payload)]">
+					<logger level="INFO" doc:name="log-audit" doc:id="42de3f79-b7a9-4aef-8230-a11c2c4137da" message='#["Invalid File for today has been listed Successfully. Proceeding to send Email. TraceId : " ++ (vars.traceId default"")]' />
+					<ee:transform doc:name="email Content" doc:id="4c621675-c0c0-4278-aa77-ee7b8e03da09">
 				<ee:message>
 				</ee:message>
 				<ee:variables>
-					<ee:set-variable variableName="isInvalidComm" ><![CDATA[%dw 2.0
+					<ee:set-variable variableName="isInvalidComm"><![CDATA[%dw 2.0
 output application/java
 ---
 true]]></ee:set-variable>
 					<ee:set-variable resource="dwl/invalidRecordsEmailContent.dwl" variableName="emailContent" />
 				</ee:variables>
 			</ee:transform>
-			<async doc:name="Async" doc:id="c60c00f5-b41e-4e55-8a89-9ab240b7cab6" >
-				<flow-ref doc:name="Send Email" doc:id="78da9b17-c508-43be-a7aa-89da1e6bf6d7" name="smtp-send-email-notification-subflow" />
-			</async>
+					<flow-ref doc:name="Send Email" doc:id="97e5a594-2a5e-4841-b155-c25853e437ba" name="smtp-send-email-notification-subflow" />
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="log-audit" doc:id="4d309ac3-876e-446e-820d-7ea1ef06f13f" message='#["Invalid File for today has been not been found. Exiting. TraceId : " ++ (vars.traceId default"")]'/>
+				</otherwise>
+			</choice>
 			<error-handler >
-				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ea221019-1cd4-49ac-9576-2b6f88784c19" type="ANY">
-					<logger level="ERROR" doc:name="log-error" doc:id="33d8a84f-f37b-4316-a112-649284116603" message='#["Invalid File List operation has failed. Please check for the file manually at SFCC SFTP Server"]'/>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e860e00a-83ef-470e-8c1c-0fd237572a07" type="ANY">
+					<logger level="ERROR" doc:name="log-error" doc:id="1489ea66-3ea8-433e-9fb7-b7fcdaa083a5" message='#["Invalid File List operation has . Please check for the file manually at SFCC SFTP Server"]'/>
 				</on-error-continue>
 			</error-handler>
 		</try>
 	</sub-flow>
-	<sub-flow name="sfcc-sftp-push-subflow" doc:id="deaa5436-05bd-4fd1-b528-9c596721bd12" >
-		<choice doc:name="Choice" doc:id="2c9edf86-08eb-49e3-9950-fab2e95ef790">
+	<sub-flow name="sfcc-sftp-push-subflow" doc:id="e094f519-6154-41ea-aaab-8990b18be1f3" >
+		<choice doc:name="Choice" doc:id="ec025b7d-3a75-4130-9611-75a3d6e1d91d">
 			<when expression="#[(p('sftp.sfcc.mocked') as Boolean)]">
-				<!-- [STUDIO:"Mock Server Request"]<http:request method="GET" doc:name="Mock Server Request" doc:id="49f1a41d-542b-4724-ad7a-9cef31cc3f3f" config-ref="HTTP_Request_configuration_Mock_SFCC" path="${sftp.sfcc.mockHttpServerPath}"/> [STUDIO] -->
-				<logger level="INFO" doc:name="Mock Logger" doc:id="3282d4f8-c355-4a97-904d-b76abb6398db" message='#["Request has been Mocked due to network constraints"]' />
+				<!-- [STUDIO:"Mock Server Request"]<http:request method="GET" doc:name="Mock Server Request" doc:id="0edd0e9f-353a-4782-875f-5608c7c5a687" config-ref="HTTP_Request_configuration_Mock_SFCC" path="${sftp.sfcc.mockHttpServerPath}"/> [STUDIO] -->
+				<logger level="INFO" doc:name="Mock Logger" doc:id="ab82a9d9-443f-445a-b4e8-5b274b31f72c" message='#["Request has been Mocked due to network constraints"]' />
 			</when>
 			<otherwise>
-				<sftp:write doc:name="SFTP Write SFCC" doc:id="c7fbc23d-3f10-499e-ad69-3c561c6aa090" config-ref="SFTP_Config_SFCC_Write" path='#[vars.fileName default ""]' mode="APPEND">
+				<sftp:write doc:name="SFTP Write SFCC" doc:id="2ea6bbe7-531e-483e-8d60-6fc8748db7d3" config-ref="SFTP_Config_SFCC_Write" path='#[vars.fileName default ""]' mode="APPEND">
 				<sftp:content><![CDATA[#[%dw 2.0
 output application/csv header=false
 ---
@@ -51,9 +56,9 @@ payload]]]></sftp:content>
 			</sftp:write>
 			</otherwise>
 		</choice>
-		<remove-variable doc:name="Remove Variable (inventoryDetail)" doc:id="bdea5320-b4f7-4f21-a692-0c4f8c1c0215" variableName="invDetails" />
-		<remove-variable doc:name="Remove Variable (fileName)" doc:id="dd24aaa9-cbcf-4d8c-9ad4-3c1e9230f40c" variableName="fileName" />
-		<logger level="INFO" doc:name="log-end" doc:id="5b47c927-30a0-4711-8f7b-4a8769a82e73" message='#["End of Write(Append) inside Batch_Step. TraceId : " ++ ((vars.traceId) default"")]' />
+		<remove-variable doc:name="Remove Variable (inventoryDetail)" doc:id="c56103c7-1598-47ad-acd7-7b1bc139a962" variableName="invDetails" />
+		<remove-variable doc:name="Remove Variable (fileName)" doc:id="6bf211cd-b88b-475f-af5f-33fd3659962f" variableName="fileName" />
+		<logger level="INFO" doc:name="log-end" doc:id="cb0b8268-3172-480f-a255-4003f336aa6b" message='#["End of Write(Append) inside Batch_Step. TraceId : " ++ ((vars.traceId) default"")]' />
 	</sub-flow>
 	
 </mule>

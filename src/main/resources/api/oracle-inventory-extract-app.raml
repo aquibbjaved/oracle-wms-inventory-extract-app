@@ -28,4 +28,12 @@ securitySchemes:
             200:
               body:
                 example: !include examples/PingResponse.json
+/invoke:
+      is: [client-credentials, traceId, errorTrait]
+      get:
+        description: This can be requested by anyone who wants to manually run the process
+        responses:
+            200:
+              body:
+                example: !include examples/InvokeResponse.json
                   

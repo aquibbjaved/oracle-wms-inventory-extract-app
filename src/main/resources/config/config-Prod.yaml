@@ -43,7 +43,7 @@ sftp:
             workingDirectory: ${sftp.oracle.write.workingDirectory} 
     ########## Hosted At Local Computer Via OpenSSH ###########
     sfcc:
-        mocked: "false"
+        mocked: "true"
         host: "![T63fbBAWh3IJYWtFk66x/w==]"
         port: "22"
         username: "![C4HJMCLGDp9tl98p4Ie2qg==]"

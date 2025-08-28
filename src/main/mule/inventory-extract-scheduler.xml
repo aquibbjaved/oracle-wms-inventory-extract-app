@@ -14,19 +14,24 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<ee:message >
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable resource="dwl/traceIdScheduler.dwl" variableName="traceId" />
+				<ee:set-variable variableName="traceId" ><![CDATA[%dw 2.0
+output application/json
+---
+attributes.headers."trace-id" default(uuid()[0 to 17] ++ ":" ++ uuid()[0 to 17] ++ ":0:0" replace "-" with "")]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="55549e03-7869-44a6-b747-debe936bac0a" message='#["Scheduler trigger detected, proceeding to check if the scheduler is enabled. TraceId: " ++ ((vars.traceId) default"")]'/>
 		<choice doc:name="Check if Scheduler Enabled ?" doc:id="e11049ed-ebe9-43c9-980e-c111174ac423" >
 			<when expression="#[(p('scheduler.status') default&quot;&quot;) == &quot;online&quot;]">
 				<logger level="INFO" doc:name="log-audit" doc:id="49f4744a-28cb-4aaf-bab0-5ec2f5e5f9e8" message='#["Scheduler is enabled, proceeding to read files from SFTP. TraceId : " ++ ((vars.traceId) default"")]'/>
-				<flow-ref doc:name="Refer: batch-impl-flow" doc:id="26ed08fd-0177-4df9-91ec-808a3ef5f552" name="oracle-inventory-batch-implementation-flow"/>
+				<async doc:name="Async" doc:id="aa504aab-a33b-4fd1-b3fc-c7b80e849304" >
+					<flow-ref doc:name="Refer: batch-impl-flow" doc:id="26ed08fd-0177-4df9-91ec-808a3ef5f552" name="oracle-inventory-batch-implementation-flow" />
+				</async>
 			</when>
 			<otherwise >
 				<logger level="INFO" doc:name="log-end" doc:id="f0d21f98-f585-430d-a9c5-fcc856b11192" message='#["The Scheduler has been disabled via the app properties, exiting the flow"]'/>
 			</otherwise>
 		</choice>
-		
+		<error-handler ref="error-common" />
 	</flow>
 </mule>

@@ -6,22 +6,37 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
-	<error-handler name="error-common" doc:id="037e0ec1-8b88-4054-ae94-af1cf99f46c2" >
-		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d8a29fd5-df27-43a4-bbc2-70b18a7675e4" >
-			<ee:transform doc:name="Error Data" doc:id="cb428c1c-18a9-42ae-81f5-9180c27a8ead">
-				<ee:message />
+	<error-handler name="error-common" doc:id="213bb750-6ef1-4d67-9367-8902f94d99ba" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="9b78b23e-d9b9-4e5f-b157-b0e37a284bb8" >
+			<ee:transform doc:name="Error Data" doc:id="aa09ac46-a710-4b88-b2e7-4d2132924df9">
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var errorType = error.errorType..identifier joinBy (",") default "Internal Server Error"
+---
+write({
+	"errorDescription": (error.description as String) default "Internal Server Error",
+	"errorSeverity": "CRITICAL", 
+	"errorStackTrace": error.cause as String default "Internal Server Error",
+	"errorType": errorType,
+	"retriable": "No",
+	"application": p('application.name'),
+	"failingComponent": error.failingComponent default "Oracle WMS SFTP Read"
+
+}, 'application/json')]]></ee:set-payload>
+				</ee:message>
 				<ee:variables>
 					<ee:set-variable resource="dwl/emailContentCommonError.dwl" variableName="emailContent" />
 					<ee:set-variable resource="dwl/errorDataCommonError.dwl" variableName="errorData" />
 				</ee:variables>
 			</ee:transform>
-			<logger level="INFO" doc:name="Logger" doc:id="c344e0e2-a471-4665-84c3-7a4a948fa5ab" message='#["Error Occured  : " ++ (vars.errorData default "") ++ ", TraceId : " ++ ((vars.traceId) default "")]' />
-			<async doc:name="Async" doc:id="f38719dc-d5be-4fd9-b834-e09e5080829b" >
-				<flow-ref doc:name="Send Error Notification" doc:id="2399ba4f-1eb0-4371-8261-71f1e0e7bc13" name="smtp-send-email-notification-subflow" />
+			<logger level="INFO" doc:name="Logger" doc:id="1d01e00f-44d3-4fa5-bc77-b2fd1d98177f" message='#["Error Occured  : " ++ (vars.errorData default "") ++ ", TraceId : " ++ ((vars.traceId) default "")]' />
+			<async doc:name="Async" doc:id="95b2f4e7-0ec4-421f-9da8-f1bc8bbdea30" >
+				<flow-ref doc:name="Send Error Notification" doc:id="3024548b-10a2-4260-a0b3-f44ea1c91e33" name="smtp-send-email-notification-subflow" />
 			</async>
 		</on-error-propagate>
 	</error-handler>
-	<error-handler name="apikit-errors" doc:id="6def21c4-b13d-49ea-bab7-5376c3caaaef" >
+	<error-handler name="apikit-errors" doc:id="4c6b6ac5-d345-4e41-92c2-eb4fb083376a" >
 		<on-error-propagate type="APIKIT:BAD_REQUEST">
 			<ee:transform doc:name="Transform Message">
                     <ee:message>
@@ -94,9 +109,10 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
                 </ee:transform>
             </on-error-propagate>
 	</error-handler>
-	<!-- <error-handler name="sftp-write-error-handler" doc:id="0cd76105-049e-4078-a330-7e60cba8c307" >
-		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="bfde9a34-b20f-462a-bdae-8ef5ff837af1" type="ANY">
-			<ee:transform doc:name="Email/Error Data Variable" doc:id="2443be22-7a1a-44c7-bbad-936fbe80c6a7" >
+	
+	<!-- <error-handler name="sftp-write-error-handler" doc:id="a3b108fe-2fcc-40f5-a55d-4582a631942f" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ef5af069-1df1-4545-92c8-b5eccf449a01" type="ANY">
+			<ee:transform doc:name="Email/Error Data Variable" doc:id="dadcd614-78b6-4cf9-ae0b-8481fd0ec76c" >
 				<ee:message >
 				</ee:message>
 				<ee:variables >
@@ -148,14 +164,14 @@ write(({
 }),'application/json')]]></ee:set-variable>
 				</ee:variables>
 			</ee:transform>
-			<logger level="ERROR" doc:name="log-error" doc:id="c459a13b-683e-49d6-a120-a1e42eb8dace" message='#["FATAL : Error Occured while calling SFTP Write. Error: " ++ (vars.errorData default "")]' />
-			<remove-variable doc:name="Remove fileName Variable" doc:id="882e2198-a193-42f2-a559-9ccdea7d58cd" variableName="fileName" />
-			<remove-variable doc:name="Remove invDetails Variable" doc:id="afa09692-9a34-4542-a45d-d0b271647cc2" variableName="invDetails" />
-			<async doc:name="Async" doc:id="6a82b185-66ff-495b-bbca-48487a43d7d7" >
-				<flow-ref doc:name="Send Error Notification" doc:id="5a1aacf0-b3ac-4b16-ae4a-fc449237dd53" name="smtp-send-email-notification-subflow"/>
+			<logger level="ERROR" doc:name="log-error" doc:id="2c860fb2-853d-4a7d-88a0-2d0891975941" message='#["FATAL : Error Occured while calling SFTP Write. Error: " ++ (vars.errorData default "")]' />
+			<remove-variable doc:name="Remove fileName Variable" doc:id="3f20d625-18d6-4297-86c0-735b869adf73" variableName="fileName" />
+			<remove-variable doc:name="Remove invDetails Variable" doc:id="59961331-5e2f-4981-9e1c-2b76901019b5" variableName="invDetails" />
+			<async doc:name="Async" doc:id="5f79581e-1f90-4148-af52-0ba910a36d6d" >
+				<flow-ref doc:name="Send Error Notification" doc:id="6749cd8f-4776-4a04-8fad-88a697c22d58" name="smtp-send-email-notification-subflow"/>
 			</async>
-			<remove-variable doc:name="Remove errorData Variable" doc:id="74b7d065-cecc-4dc0-9f74-88fc7300b128" variableName="errorData"/>
-			<remove-variable doc:name="Remove emailContent Variable" doc:id="26fc4bfd-0202-491a-a01f-f9b5c1617a3b" variableName="emailContent"/>
+			<remove-variable doc:name="Remove errorData Variable" doc:id="7a071dab-adbd-48f5-8037-551b8239dff8" variableName="errorData"/>
+			<remove-variable doc:name="Remove emailContent Variable" doc:id="55560261-4c92-4909-9e27-b263c4c4226a" variableName="emailContent"/>
 		</on-error-propagate>
 	</error-handler> -->
 </mule>

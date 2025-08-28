@@ -1,32 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <apikit:config name="oracle-inventory-extract-app-config" api="oracle-inventory-extract-app.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <flow name="oracle-inventory-extract-app-main">
-        <http:listener path="${https.listener.path}" config-ref="oracle-inventory-extract-app-httpListenerConfig">
+        <http:listener config-ref="HTTP_Listener_config" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:response>
             <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body><![CDATA[#[payload]]]></http:body>
-                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:error-response>
         </http:listener>
-       	<ee:transform doc:name="Transaction ID" doc:id="a287c4c3-873a-4da7-809d-4be7bd1cfb2f" >
-			<ee:message >
-			</ee:message>
-			<ee:variables >
-				<ee:set-variable resource="dwl/traceIdGen.dwl" variableName="traceId" />
-			</ee:variables>
-		</ee:transform> 
-        <apikit:router config-ref="oracle-inventory-extract-app-config"/>
-		<error-handler ref="apikit-errors" />
-    </flow>
-    <flow name="get:\healthcheck\ping:oracle-inventory-extract-app-config">
-        <logger level="INFO" doc:name="log-start" doc:id="034f2b35-82cf-4a24-849b-a3af02b51954" message='#["Start of Ping HealtheCheck. TraceId : " ++ (vars.traceId default "")]'/>
-		<ee:transform doc:name="final Payload">
+        <ee:transform doc:name="Transaction ID" doc:id="136bcfd9-395d-4216-90f7-a29a3532c81d">
             <ee:message>
-				<ee:set-payload resource="dwl/pingResponse.dwl" />
+            </ee:message>
+            <ee:variables>
+				<ee:set-variable resource="dwl/traceIdGen.dwl" variableName="traceId" />
+            </ee:variables>
+        </ee:transform>
+        <apikit:router config-ref="oracle-inventory-extract-app-config" />
+        <error-handler ref="apikit-errors" />
+    </flow>
+    <flow name="get:\invoke:oracle-inventory-extract-app-config">
+        <logger level="INFO" doc:name="Logger" doc:id="8b049dce-306c-44f4-9eeb-76941b24223a" message="#[&quot;Started Scheduler Job Manually&quot;]" />
+        <async doc:name="Async" doc:id="6056f7cc-7289-4f53-bbf6-d87f6cb41f99">
+            <flow-ref doc:name="Refer : implm flow" doc:id="0c50c71b-fe81-4e17-a321-5424bebe9019" name="inventory-extract-schedulerFlow" />
+        </async>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "Job Successfully Triggered"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-		<logger level="INFO" doc:name="log-end" doc:id="3f408e82-74bc-4b61-859d-bbdbd89f8964" message='#["End of Ping HealtheCheck. TraceId : " ++ (vars.traceId default "")]'/>
+    </flow>
+    <flow name="get:\healthcheck\ping:oracle-inventory-extract-app-config">
+        <logger level="INFO" doc:name="Logger" doc:id="8321ca58-65b7-4935-aa9f-711c8018be94" />
+        <ee:transform doc:name="final Payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "ok",
+  appName: "oracle-inventory-sync-app(mule)",
+  appVersion: "v1"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
     </flow>
 </mule>

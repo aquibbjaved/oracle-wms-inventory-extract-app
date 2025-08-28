@@ -5,8 +5,7 @@ output application/json
 	"subject" : "Alert: Issues Encountered During Today’s Inventory Data Sync-up",
 	"errorDetails" : write(({
 	"application": p('application.name'),
-	"traceId" : vars.traceId,
-	"runMetrics" : write(payload default {},'application/json'),
+	"traceId" : vars.traceId default "",
 	"retriable": "Yes",
 	"errorRecordsDirectory" : "oracle/from_mule/Inventory_Failed_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv",
 	"errorDetails" : "Please Check Oracle WMS Error Directory for more details",
