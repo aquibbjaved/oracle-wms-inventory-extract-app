@@ -1,0 +1,1 @@
+# oracle-wms-inventory-extract-app
