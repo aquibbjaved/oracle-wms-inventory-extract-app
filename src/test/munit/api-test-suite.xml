@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="api-test-suite.xml" />
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest" doc:id="bdf715db-bea3-4e0d-a30e-3072d1cb1e70" description="Test">
+		<munit:behavior>
+			<munit-tools:mock-when doc:name="Mock when" doc:id="663a6893-83c7-493a-9b64-48af3a055429" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-call flow="get:\healthcheck\ping:oracle-inventory-extract-app-config" />
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="31e36710-9fa7-4986-b2ba-515d08b7f8d3" >
+			</munit:set-event>
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="1f82c188-2742-4e7c-973d-67b6350bc1a8" name="oracle-inventory-extract-app-main"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="ff2cf37f-de48-4156-9821-b04b7eeeb279" processor="logger">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="log-start" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest-invoke" doc:id="943032ae-28ea-4ec9-8122-bf2ff5d2dd78" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock SFTP Read" doc:id="aacf435b-f0b3-48d6-b6a0-c817da0bfee3" processor="sftp:read">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Read Oracle SFTP" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[MunitTools::getResourceAsString('sample\mockStreamPayload.csv')]" mediaType="application/csv" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="SFTP Write SFCC" doc:id="1436a46a-069c-4b70-9449-970b12732851" processor="sftp:write">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="SFTP Write SFCC" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="Mock when" doc:id="1373de5c-76b0-487e-94b3-2032529b1908" processor="sftp:write">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="SFTP Write Oracle Error Directory" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="7e39dd5e-9901-4c7c-9372-c8194e103a88" name="inventory-extract-schedulerFlow"/>
+			<munit-tools:sleep time="20000" doc:name="Sleep" doc:id="f0c47851-9ac0-4211-b238-0b78b3f72e9c" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="f8af9d15-51d5-423f-8457-4af604d6ad24" processor="email:send" atLeast="1">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest-sffccwrite" doc:id="ff8cccd7-5163-492c-a1cb-eb8e55c2b0b5" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock SFTP Read" doc:id="f34bbfe1-bd0f-4195-9bb0-f354a9aa0501" processor="sftp:read">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Read Oracle SFTP" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[MunitTools::getResourceAsString('sample\mockStreamPayload.csv')]" mediaType="application/csv" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="SFTP Write SFCC" doc:id="c4212fc0-2ee6-4c71-a94a-4c37472698ea" processor="sftp:write">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="SFTP Write SFCC" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="75e5a98b-d41d-41d5-b1a6-26de1ec5e2c5" name="inventory-extract-schedulerFlow"/>
+			<munit-tools:sleep time="20000" doc:name="Sleep" doc:id="2b63c4e9-02c6-40bd-9521-1ef098ba2daf" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="589bad05-da23-4615-9c75-421ec6d37232" processor="email:send" atLeast="1">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest-sffccwrite-success" doc:id="ecd4ad8e-36da-4241-ae82-04736f94b78f" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock SFTP Read" doc:id="b182951d-ce27-4120-8058-53141b4abda5" processor="sftp:read">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Read Oracle SFTP" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[MunitTools::getResourceAsString('sample\mockStreamPayload2.csv')]" mediaType="application/csv" />
+				</munit-tools:then-return>
+			
+</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="SFTP Write SFCC" doc:id="9e14fb7c-343a-4c0a-9dc6-c28b98d50898" processor="sftp:write">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="SFTP Write SFCC" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="45f3fa8c-078c-4495-9f45-d18adae296d2" name="inventory-extract-schedulerFlow"/>
+			<munit-tools:sleep time="20000" doc:name="Sleep" doc:id="5ac68172-6fd6-4e94-bbf8-675d22dce8ee" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="1557a7d7-1d5a-40ba-a1c1-ee81ea2c1a10" processor="email:send" atLeast="1">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest-sffccwrite-failure" doc:id="310e8544-de98-4ace-9dcc-194b9dde61ea" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock SFTP Read" doc:id="aafb72db-d105-476c-8e7e-a952b7dd44cd" processor="sftp:read">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Read Oracle SFTP" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			
+
+</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="578e0017-b94c-4993-97fc-77a3ed9b6bc8" name="inventory-extract-schedulerFlow"/>
+			<munit-tools:sleep time="20000" doc:name="Sleep" doc:id="dcd14270-f228-46ee-b3ca-ceaa76ff50cf" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="77d9bcd5-bfe7-4495-98a3-00ad4b34fdfa" processor="email:send" atLeast="1">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest-dataLoss-scenario" doc:id="0ffda818-669d-4733-b7fb-55d2970a614f" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock SFTP Read" doc:id="de1b22b7-cc8a-43df-bd9e-b8a204cdc59e" processor="sftp:read">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Read Oracle SFTP" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[MunitTools::getResourceAsString('sample\mockStreamPayload.csv')]" mediaType="application/csv" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="SFTP Write SFCC" doc:id="3afa8f58-66b4-4d6a-b150-a7a3b5ca54e5" processor="sftp:write">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="SFTP Write SFCC" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="Mock error push to Oracle" doc:id="dcb1f443-122d-4c86-b80b-027c30759518" processor="sftp:write">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="SFTP Write Oracle Error Directory" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		
+</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="ad5b80e7-72dd-4882-beb9-d61dfa3e7dc1" name="inventory-extract-schedulerFlow"/>
+			<munit-tools:sleep time="20000" doc:name="Sleep" doc:id="0f56e4f3-b636-4330-a957-ea98569618f5" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="df17a50b-fca1-4d20-9636-34b8d4a3fdb1" processor="email:send" atLeast="3">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-APIKIT-badrequest" doc:id="92c90f6d-3143-4d91-a644-5f9a643bafde" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock APIKIT" doc:id="70c0170a-2ed8-4556-ae7e-df9a4210d1c2" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="APIKIT:BAD_REQUEST" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="60ba291d-c157-4367-9818-9ba3ae068585" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="b9647826-a188-41ea-be99-5f6e2b11f57b" name="oracle-inventory-extract-app-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e6d92771-e50e-4a91-9032-304383b3899e" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="8e217a18-978b-4504-93ad-7c43e8fbe011" processor="ee:transform">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Transform Message" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-APIKIT:NOT_FOUND" doc:id="34a7068d-2673-4ba1-aa7f-10ef72e1338f" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock ApiKit" doc:id="3a20f2d2-ea27-4390-b073-2cf8734c76ae" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="APIKIT:NOT_FOUND" />
+				</munit-tools:then-return>
+			
+</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="df7ad9ee-dfb1-4d2d-bd26-33cae66b6c70" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="2666eaee-b647-48e2-99d5-4978e0d93f32" name="oracle-inventory-extract-app-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c6595a2f-543a-40ed-a631-c6e85e1edced" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="8e7e1163-4bdc-4642-b9ce-924c3678de36" processor="ee:transform">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Transform Message" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+
+		</munit:validation>
+	
+</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-APIKIT:METHOD_NOT_ALLOWED" doc:id="de0f0311-bec9-4809-928c-216917f45042" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock Apikit" doc:id="4dd09778-8833-4969-8381-950bfa4b5f86" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="APIKIT:METHOD_NOT_ALLOWED" />
+				</munit-tools:then-return>
+			
+</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="8428ed3f-bec1-4771-9bfe-57eae654082a" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="42dcaca2-9f9d-4d6c-8199-39c5db242579" name="oracle-inventory-extract-app-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f710206e-15ee-4423-ab18-f024e42aabc7" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="e0a1c758-fa59-44b4-a88e-2c6221945b61" processor="ee:transform">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Transform Message" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+
+		</munit:validation>
+	
+</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-APIKIT:NOT_ACCEPTABLE" doc:id="a6aa334c-a89f-4524-be21-5b3b68e866b2" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock APIKIT" doc:id="86676e54-a93b-488f-8a6d-cc198062090f" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="APIKIT:NOT_ACCEPTABLE" />
+				</munit-tools:then-return>
+			
+</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="4150087c-6a46-4758-ba3e-5de836d55130" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="41a56ad7-ef30-48e6-9d69-6fa54e1cb754" name="oracle-inventory-extract-app-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="923944da-c338-4081-a23f-6eb5cbbc207d" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="3b5a7376-a051-402c-8300-73e08b26379a" processor="ee:transform">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Transform Message" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+
+		</munit:validation>
+	
+</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-APIKIT:UNSUPPORTED_MEDIA_TYPE" doc:id="ccea13f3-4777-47b6-8c5e-42f5a26210db" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock APIKIT" doc:id="a8630883-361c-4b5d-898f-a6c7c7a93c36" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="APIKIT:UNSUPPORTED_MEDIA_TYPE" />
+				</munit-tools:then-return>
+			
+</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="543bd08b-8b78-4920-9ce1-43a400998d93" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="bb2f9232-1bf3-426b-8ed1-115d6b0abb63" name="oracle-inventory-extract-app-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="602becb3-e574-45e4-ba77-5fc0a60ba6d0" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="9ada65a6-021a-4488-8f00-4b5ee5c38340" processor="ee:transform">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Transform Message" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+
+		</munit:validation>
+	
+</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-APIKIT:NOT_IMPLEMENTED" doc:id="39cfe4f6-c26d-4cea-867b-e4c323e49baf" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock APIKIT" doc:id="d33f7ea6-3412-41b2-bdd5-c16856504406" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="APIKIT:NOT_IMPLEMENTED" />
+				</munit-tools:then-return>
+			
+</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="ca3ffb61-f3c0-4585-ae23-02bece4b4b02" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="cc99e53a-c91c-44f3-96aa-26a3885f6a09" name="oracle-inventory-extract-app-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="beaa761f-193a-48a5-aa6e-0f4385c357ec" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:verify-call doc:name="Verify call" doc:id="c9be652d-3923-4dd4-ac2e-c1a2b14bf507" processor="ee:transform">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Transform Message" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+
+		</munit:validation>
+	
+</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mock-invoke-error" doc:id="60015aea-98e9-4f0c-9651-4bd634975c7e" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock read batch Impl ref" doc:id="017da8ad-3e61-48fc-9f92-083c857fb07f" processor="flow-ref">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Refer: batch-impl-flow" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="ANY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="b9751023-707f-49ef-8063-4c6fbe784001" >
+				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="b2704e4f-cf9a-467b-b654-8e0c4c663ca7" name="inventory-extract-schedulerFlow" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="9478f274-e58d-4a68-bc0e-b799beb47664" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="3e2f32f3-2187-456c-baf2-48a30c54ea4c" processor="email:send">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	
+
+
+</mule>

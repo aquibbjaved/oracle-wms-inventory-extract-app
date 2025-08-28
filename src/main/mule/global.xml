@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd 
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd 
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+	<http:listener-config name="oracle-inventory-extract-app-httpListenerConfig">
+        <http:listener-connection host="${https.listener.host}" port="${https.listener.port}" />
+    </http:listener-config>
+    <apikit:config name="oracle-inventory-extract-app-config" api="oracle-inventory-extract-app.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <configuration doc:name="Configuration" doc:id="08e770bc-475e-47c5-984e-1e5f09d12610" defaultErrorHandler-ref="error-common" correlationIdGeneratorExpression="#[correlationId]"/>
+	<configuration-properties doc:name="Configuration properties" doc:id="012b8fa1-29c4-46a7-8d56-7857257e9cdf" file="config/config-${mule.env}.yaml" />
+	<global-property doc:name="Global Property" doc:id="f52f7f50-9946-49fe-94a3-81478afdef57" name="mule.env" value="Sandbox"/>	
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="1969ba49-cbe0-458e-adda-595b557e654b" >
+		<email:smtp-connection host="${emailSMTP.host}" user="${secure::emailSMTP.username}" password="${secure::emailSMTP.password}" port="${emailSMTP.port}">
+			<reconnection >
+				<reconnect frequency="${emailSMTP.retry.frequency}" count="${emailSMTP.retry.attempts}" />
+			</reconnection>
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<sftp:config name="SFTP_Config_SFCC_Write" doc:name="SFTP Config" doc:id="a9f40fdb-c5dc-4b78-b331-96840aec7ec0" >
+		<sftp:connection workingDir="${sftp.sfcc.workingDirectory}" host="${secure::sftp.sfcc.host}" port="${sftp.sfcc.port}" username="${secure::sftp.sfcc.username}" password="${secure::sftp.sfcc.password}" >
+			<reconnection >
+				<reconnect frequency="${sftp.reconnection.frequency}" count="${sftp.reconnection.attempts}" />
+			</reconnection>
+		</sftp:connection>
+	</sftp:config>
+	<sftp:config name="SFTP_Config_SFCC_Read" doc:name="SFTP Config" doc:id="06cc60cd-36eb-40a4-b854-992ebfa7bda6" >
+		<sftp:connection workingDir="/" host="${secure::sftp.sfcc.host}" port="${sftp.sfcc.port}" username="${secure::sftp.sfcc.username}" password="${secure::sftp.sfcc.password}" >
+			<reconnection >
+				<reconnect frequency="${sftp.reconnection.frequency}" count="${sftp.reconnection.attempts}" />
+			</reconnection>
+		</sftp:connection>
+	</sftp:config>
+	<sftp:config name="SFTP_Config_Oracle_Read" doc:name="SFTP Config" doc:id="c876b58c-3ebe-43bc-82d6-8b4c6e38c20e" >
+		<sftp:connection workingDir="${sftp.oracle.read.workingDirectory}" host="${sftp.oracle.read.host}" port="${sftp.oracle.read.port}" username="${sftp.oracle.read.username}" password="${secure::sftp.oracle.read.password}" >
+			<reconnection >
+				<reconnect frequency="${sftp.reconnection.frequency}" count="${sftp.reconnection.attempts}" />
+			</reconnection>
+		</sftp:connection>
+	</sftp:config>
+	<sftp:config name="SFTP_Config_Oracle_Write" doc:name="SFTP Config" doc:id="4dafd7f8-c8f3-4024-b368-06afe6212bae" >
+		<sftp:connection workingDir="${sftp.oracle.write.workingDirectory}" host="${secure::sftp.oracle.write.host}" port="${sftp.oracle.write.port}" username="${secure::sftp.oracle.write.username}" password="${secure::sftp.oracle.write.password}" >
+			<reconnection >
+				<reconnect frequency="${sftp.reconnection.frequency}" count="${sftp.reconnection.attempts}" />
+			</reconnection>
+		</sftp:connection>
+	</sftp:config>
+	<http:request-config name="HTTP_Request_configuration_Mock_SFCC" doc:name="HTTP Request configuration" doc:id="67ca6663-9e0c-495a-8a1c-248e0b619b37" >
+		<http:request-connection protocol="HTTPS" host="${sftp.sfcc.mockHttpServer}" />
+	</http:request-config>
+	<api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="190ae560-b601-4d93-8199-5bb8d6c25394" flowRef="oracle-inventory-extract-app-main" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="03208c32-826f-4273-b6d1-4d1ed936e78b" file="config/config-${mule.env}.yaml" key="${mule.key}" />
+	
+</mule>

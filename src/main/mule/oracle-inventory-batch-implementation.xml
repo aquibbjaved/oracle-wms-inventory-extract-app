@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<flow name="oracle-inventory-batch-implementation-flow" doc:id="e6a5daa6-3b58-49bd-b4aa-1737b7af8ac7" >
+		<logger level="INFO" doc:name="log-start" doc:id="4a4cc31d-4607-48c9-bd8a-a24f52f953be" message="#[&quot;Started Flow Batch Process Files, proceeding to read file. TraceId :  $(vars.traceId default '')&quot;]" category="INFO" />
+		<flow-ref doc:name="Read Oracle WMS SFTP" doc:id="c8b3dd48-2369-4cb1-a486-525bdd892c11" name="sftp-oracle-wms-csvfile-read-subflow"/>
+		<choice doc:name="Check if Data was received ?" doc:id="7c8176df-0ad6-40f4-9f2f-bba4bf11f7e1" >
+			<when expression="#[(isEmpty(payload)) and (isEmpty(vars.errorData))]" >
+				<logger level="INFO" doc:name="log-audit" doc:id="2efbf90e-a5c9-4475-85dd-05c024ec7bc4" message='#["The Inventory file found had no details. TraceId : " ++ ((vars.traceId) default"")]'/>
+			</when>
+			<when expression="#[(!isEmpty(vars.errorData))]">
+				<logger level="INFO" doc:name="log-audit" doc:id="c2efe5c6-9fda-4832-9606-995e35fbb6a2" message='#["The file Read process found that file wasnt available in for the date in the directory. Check Email for more details. Process Exits. TraceId : " ++ ((vars.traceId) default"") ++ ", ErrorData: " ++ (vars.errorData default "")]'/>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Stream Payload in JSON" doc:id="809b757f-4f5c-4b80-af38-eb7eb52b65c5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+@StreamCapable
+input payload application/csv header=true
+output application/json deferred=true
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<batch:job jobName="batch-job-oracle-inventory-extract-process" doc:id="a49f40ed-8f38-4329-84aa-7734c4b2e36a" blockSize="${batch.block-size}" maxConcurrency="${batch.max-concurrency}" maxFailedRecords="-1">
+			<batch:process-records>
+				<batch:step name="Batch_Step_Valid_Records" doc:id="6a8175e0-59c0-41cc-b093-2b9f4452798f" acceptExpression='#[ (!((payload pluck ((value, key, index) -&gt; isEmpty(value))) contains true)) and ((payload."Quantity" as String) matches /^\d+$/) and (["STANDARD","BACKORDER"] contains (upper(payload.Type default "")))]'>
+					<ee:transform doc:name="Segregated fileName Variable" doc:id="52a74905-daa0-4a93-a000-c33a5da521ed">
+						<ee:message>
+						</ee:message>
+						<ee:variables>
+									<ee:set-variable variableName="invDetails" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"sku" : payload."SKU" default "",
+	"store" : payload."StoreId" default ""
+}]]></ee:set-variable>
+									<ee:set-variable resource="dwl/validFileName.dwl" variableName="fileName" />
+						</ee:variables>
+					</ee:transform>
+					<flow-ref doc:name="Write(Append) SFCC SFTP" doc:id="ae26cc7f-04df-40b1-af9f-33f3883c859f" name="sfcc-sftp-push-subflow" />
+				</batch:step>
+				<batch:step name="Batch_Step_Invalid_Records" doc:id="208295da-bb62-4808-8fd0-d9bb55257bc9" acceptExpression='#[!( (!((payload pluck ((value, key, index) -&gt; isEmpty(value))) contains true)) and ((payload."Quantity" as String) matches /^\d+$/) and (["STANDARD","BACKORDER"] contains (upper(payload.Type default ""))))]'>
+					<ee:transform doc:name="Invalid fileName Variable" doc:id="76716ad6-3867-4983-b560-019e7b6fff84">
+						<ee:message>
+						</ee:message>
+						<ee:variables>
+									<ee:set-variable variableName="invDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"sku" : payload."SKU" default "",
+	"store" : payload."StoreId" default ""
+}]]></ee:set-variable>
+									<ee:set-variable resource="dwl/invalidFileName.dwl" variableName="fileName" />
+						</ee:variables>
+					</ee:transform>
+					<flow-ref doc:name="Write(Append) SFCC SFTP" doc:id="e7db0737-afd3-4251-8900-1cc78aaa01a7" name="sfcc-sftp-push-subflow" />
+				</batch:step>
+				<batch:step name="Batch_Step_Failures_Records" doc:id="5733e43b-647a-4c00-9520-9d3fa7ab30bb" acceptPolicy="ONLY_FAILURES" >
+							<ee:transform doc:name="Error fileName Variable" doc:id="05bce94a-cf42-4ccd-945d-950ab87403cb" >
+								<ee:message >
+								</ee:message>
+								<ee:variables >
+									<ee:set-variable variableName="invDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"sku" : payload."SKU" default "",
+	"store" : payload."StoreId" default ""
+}]]></ee:set-variable>
+									<ee:set-variable resource="dwl/errorFileName.dwl" variableName="fileName" />
+								</ee:variables>
+							</ee:transform>
+							<flow-ref doc:name="Write(Append) Oracle SFTP for Redelivery " doc:id="8f1d8867-6459-4e9a-bd9b-c62b16b24e11" name="sftp-oracle-wms-error-push-subflow"/>
+						</batch:step>
+			</batch:process-records>
+					<batch:on-complete >
+						<ee:transform doc:name="Metrics" doc:id="739f4873-a869-40af-b7dd-e2f1e9bcfecf" >
+							<ee:message >
+								<ee:set-payload resource="dwl/batchOnCompleteMetrics.dwl" />
+							</ee:message>
+						</ee:transform>
+						<scatter-gather doc:name="Scatter Gather" doc:id="b0ca10b2-b1c1-403d-afba-dd8442a99219" >
+							<route>
+								<async doc:name="Async" doc:id="6c214025-330b-4cb6-944c-9d93fb54393f" >
+									<logger level="INFO" doc:name="Logger" doc:id="4b0719e5-b111-432d-8850-a31d61bee5ae" />
+									<flow-ref doc:name="Send Invalid Records Email" doc:id="6d10cdee-9e27-4735-aeb0-5eabd579eef3" name="sftp-sfcc-extract-invalid-file-subflow"/>
+								</async>
+							</route>
+							<route >
+								<choice doc:name="Check if Errored Out records present ?" doc:id="ea2d70e0-6b36-4e3c-968e-ea1deb0c730c" >
+									<when expression="#[(!isEmpty(payload.failedRecords)) and (((payload.failedRecords) as Number)&gt;0)]">
+										<async doc:name="Async" doc:id="995c8714-ea9d-4c3d-892c-139c6bc0206c" >
+											<ee:transform doc:name="errorData" doc:id="bd3a7f1b-23f0-4539-9f74-ad8e77769175">
+									<ee:message>
+									</ee:message>
+									<ee:variables>
+													<ee:set-variable resource="dwl/erroredRecordsEmailContent.dwl" variableName="emailContent" />
+									</ee:variables>
+								</ee:transform>
+											<flow-ref doc:name="Trigger Email on the failed Records" doc:id="182de83c-d246-4900-8475-bcc01698764a" name="smtp-send-email-notification-subflow" />
+										</async>
+									</when>
+								</choice>
+							</route>
+						</scatter-gather>
+						<ee:transform doc:name="Nullify the payload" doc:id="9c41b682-9ff8-47f2-b11a-4ddbe28662c7" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+null]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<logger level="INFO" doc:name="log-end" doc:id="b821e79b-3a61-4b0e-a041-e174a4886149" message="#[&quot;Batch Process Ends&quot; ++ (write(payload,'application/json'))]" />
+					</batch:on-complete>
+		</batch:job>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

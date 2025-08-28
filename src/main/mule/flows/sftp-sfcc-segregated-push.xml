@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd">
+	
+	<sub-flow name="sftp-sfcc-extract-invalid-file-subflow" doc:id="838747db-6dd3-4f6d-8060-0de5dc185d49" >
+		<try doc:name="Try" doc:id="d69afd09-6395-460d-95ed-ae2de1466679" >
+			<sftp:list doc:name="List Today's Invalid File" doc:id="d1c5a9e7-f097-4ed5-a155-d79bed34011c" config-ref="SFTP_Config_SFCC_Read" directoryPath="#[p('sftp.sfcc.workingDirectory') ++ &quot;/from_mule&quot;]">
+			<sftp:matcher filenamePattern='#["Inventory_Invalid_" ++ (now() as String {format: "dd-MM-yyyy"}) ++ ".csv"]' />
+		</sftp:list>
+			<logger level="INFO" doc:name="log-audit" doc:id="363334af-3561-4917-af61-03654c054a3c" message='#["Invalid File for today has been listed Successfully. Proceeding to send Email. TraceId : " ++ (vars.traceId default"")]'/>
+			<ee:transform doc:name="email Content" doc:id="1fb3e60d-2966-4a40-a566-deff6947f82a">
+				<ee:message>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="isInvalidComm" ><![CDATA[%dw 2.0
+output application/java
+---
+true]]></ee:set-variable>
+					<ee:set-variable resource="dwl/invalidRecordsEmailContent.dwl" variableName="emailContent" />
+				</ee:variables>
+			</ee:transform>
+			<async doc:name="Async" doc:id="c60c00f5-b41e-4e55-8a89-9ab240b7cab6" >
+				<flow-ref doc:name="Send Email" doc:id="78da9b17-c508-43be-a7aa-89da1e6bf6d7" name="smtp-send-email-notification-subflow" />
+			</async>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ea221019-1cd4-49ac-9576-2b6f88784c19" type="ANY">
+					<logger level="ERROR" doc:name="log-error" doc:id="33d8a84f-f37b-4316-a112-649284116603" message='#["Invalid File List operation has failed. Please check for the file manually at SFCC SFTP Server"]'/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</sub-flow>
+	<sub-flow name="sfcc-sftp-push-subflow" doc:id="deaa5436-05bd-4fd1-b528-9c596721bd12" >
+		<choice doc:name="Choice" doc:id="2c9edf86-08eb-49e3-9950-fab2e95ef790">
+			<when expression="#[(p('sftp.sfcc.mocked') as Boolean)]">
+				<!-- [STUDIO:"Mock Server Request"]<http:request method="GET" doc:name="Mock Server Request" doc:id="49f1a41d-542b-4724-ad7a-9cef31cc3f3f" config-ref="HTTP_Request_configuration_Mock_SFCC" path="${sftp.sfcc.mockHttpServerPath}"/> [STUDIO] -->
+				<logger level="INFO" doc:name="Mock Logger" doc:id="3282d4f8-c355-4a97-904d-b76abb6398db" message='#["Request has been Mocked due to network constraints"]' />
+			</when>
+			<otherwise>
+				<sftp:write doc:name="SFTP Write SFCC" doc:id="c7fbc23d-3f10-499e-ad69-3c561c6aa090" config-ref="SFTP_Config_SFCC_Write" path='#[vars.fileName default ""]' mode="APPEND">
+				<sftp:content><![CDATA[#[%dw 2.0
+output application/csv header=false
+---
+payload]]]></sftp:content>
+			</sftp:write>
+			</otherwise>
+		</choice>
+		<remove-variable doc:name="Remove Variable (inventoryDetail)" doc:id="bdea5320-b4f7-4f21-a692-0c4f8c1c0215" variableName="invDetails" />
+		<remove-variable doc:name="Remove Variable (fileName)" doc:id="dd24aaa9-cbcf-4d8c-9ad4-3c1e9230f40c" variableName="fileName" />
+		<logger level="INFO" doc:name="log-end" doc:id="5b47c927-30a0-4711-8f7b-4a8769a82e73" message='#["End of Write(Append) inside Batch_Step. TraceId : " ++ ((vars.traceId) default"")]' />
+	</sub-flow>
+	
+</mule>

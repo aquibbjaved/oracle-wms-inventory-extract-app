@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="inventory-extract-schedulerFlow" doc:id="ab685831-8f65-4ac7-a2b6-7d03a899dbaa" >
+		<scheduler doc:name="Scheduler " doc:id="af0980ef-1ce8-4ca6-9be3-1e75c68afdf7" >
+			<scheduling-strategy >
+				<cron expression="${scheduler.cron}" timeZone="${scheduler.timeZone}" />
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="Transaction ID" doc:id="ab5fced1-2bc9-4759-982a-18debe050edc" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable resource="dwl/traceIdScheduler.dwl" variableName="traceId" />
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="55549e03-7869-44a6-b747-debe936bac0a" message='#["Scheduler trigger detected, proceeding to check if the scheduler is enabled. TraceId: " ++ ((vars.traceId) default"")]'/>
+		<choice doc:name="Check if Scheduler Enabled ?" doc:id="e11049ed-ebe9-43c9-980e-c111174ac423" >
+			<when expression="#[(p('scheduler.status') default&quot;&quot;) == &quot;online&quot;]">
+				<logger level="INFO" doc:name="log-audit" doc:id="49f4744a-28cb-4aaf-bab0-5ec2f5e5f9e8" message='#["Scheduler is enabled, proceeding to read files from SFTP. TraceId : " ++ ((vars.traceId) default"")]'/>
+				<flow-ref doc:name="Refer: batch-impl-flow" doc:id="26ed08fd-0177-4df9-91ec-808a3ef5f552" name="oracle-inventory-batch-implementation-flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="log-end" doc:id="f0d21f98-f585-430d-a9c5-fcc856b11192" message='#["The Scheduler has been disabled via the app properties, exiting the flow"]'/>
+			</otherwise>
+		</choice>
+		
+	</flow>
+</mule>
