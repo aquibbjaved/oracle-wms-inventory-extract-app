@@ -19,8 +19,8 @@ scheduler:
 
 ######### Batch Job Configurations ##########
 batch:
-    block-size: "100"
-    max-concurrency: "16"
+    block-size: "2000"
+    max-concurrency: "1"
     
 ######### SFTP Connection Configurations #########################################
 sftp:
