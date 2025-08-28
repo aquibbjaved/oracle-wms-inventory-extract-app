@@ -30,6 +30,33 @@
 			</munit-tools:verify-call>
 		</munit:validation>
 	</munit:test>
+	<munit:test name="sftp-sfcc-segregated-push-test-suite-sftp-sfcc-extract-invalid-file-subflowTest1" doc:id="5a24d650-aaab-46d5-ac8a-d54e7db7d92c" description="Test">
+		<munit:behavior>
+			<munit-tools:mock-when doc:name="Mock List Operation" doc:id="1203325c-12cd-4afa-99bb-a5e938c25f22" processor="sftp:list">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="List Today's Invalid File" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value='#["SUCCESS"]' />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="Mock when" doc:id="fbd4faa4-9354-4bc4-a83d-63dd0c2e6948" processor="flow-ref">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send Invalid Records Info Email" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to sftp-sfcc-extract-invalid-file-subflow" doc:id="d78f750e-3dff-487d-9188-2263df31413d" name="sftp-sfcc-extract-invalid-file-subflow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="520262b0-2998-466c-8dca-fc502f4c47e6" processor="email:send">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Send" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
 
 
 </mule>

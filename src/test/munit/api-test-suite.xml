@@ -23,10 +23,11 @@
 			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="57b7e158-4830-4e8a-90e4-cfc30ee1f7e9" name="oracle-inventory-extract-app-main"/>
 		</munit:execution>
 		<munit:validation >
-			<munit-tools:verify-call doc:name="Verify call" doc:id="72a2ec07-06df-45e3-9027-b8f18aabc726" processor="logger">
+			<munit-tools:verify-call doc:name="Verify call" doc:id="72a2ec07-06df-45e3-9027-b8f18aabc726" processor="ee:transform">
 				<munit-tools:with-attributes >
-					<munit-tools:with-attribute whereValue="log-start" attributeName="doc:name" />
+					<munit-tools:with-attribute whereValue="final Payload" attributeName="doc:name" />
 				</munit-tools:with-attributes>
+
 			</munit-tools:verify-call>
 		</munit:validation>
 	</munit:test>
@@ -185,7 +186,9 @@
 			<try doc:name="Try" doc:id="29782ddd-00a5-4cf9-be32-ddca72e3b2f4" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="6aa08495-60eb-4347-a747-694e7951efcc" name="oracle-inventory-extract-app-main" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="536ee9c9-989b-44dc-a3cb-fd32f5a176b6" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="536ee9c9-989b-44dc-a3cb-fd32f5a176b6" >
+						<logger level="ERROR" doc:name="log-error" doc:id="4bc93be5-4e52-408c-8872-c94f683e440a" message='#["Inside Munits Error Handler"]'/>
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -213,7 +216,9 @@
 			<try doc:name="Try" doc:id="e28f6ac2-92b6-4da6-8b49-4e1800ca1156" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="85596496-ecfe-4543-add1-fbdd92ed3343" name="oracle-inventory-extract-app-main" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="371670d6-60eb-4fa5-a0e0-d63d65fdcf1e" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="371670d6-60eb-4fa5-a0e0-d63d65fdcf1e" >
+						<logger level="ERROR" doc:name="log-error" doc:id="b2bf3851-e049-4f91-a1ed-6f24c14b9740" message='#["Inside Munits Error Handler"]' />
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -243,7 +248,9 @@
 			<try doc:name="Try" doc:id="8aea9cfe-ef12-4545-8657-ad9272c48a15" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="57a97b83-09fb-435f-8f2f-dc823f02656c" name="oracle-inventory-extract-app-main" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="452b7695-3140-4227-bb11-998ab9da5f8c" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="452b7695-3140-4227-bb11-998ab9da5f8c" >
+						<logger level="ERROR" doc:name="log-error" doc:id="ec255a95-a4bc-4d65-ab77-5d3c2bfb8198" message='#["Inside Munits Error Handler"]' />
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -273,7 +280,9 @@
 			<try doc:name="Try" doc:id="e2b1d5e2-2f1c-4844-a654-c309d36d7e48" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="e336af9a-0d88-48cd-97e8-31ab04e18e72" name="oracle-inventory-extract-app-main" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="69106817-c042-4557-a87f-73c92dd2900c" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="69106817-c042-4557-a87f-73c92dd2900c" >
+						<logger level="ERROR" doc:name="log-error" doc:id="9b13ec66-6c24-4049-924e-57995e2dabbd" message='#["Inside Munits Error Handler"]' />
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -303,7 +312,9 @@
 			<try doc:name="Try" doc:id="d6e0fdb9-9e98-46ff-b2a5-b0de8d95fcac" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="c8d4a84f-b526-4ef7-8387-0409e934f9a5" name="oracle-inventory-extract-app-main" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6318d41a-5b63-428e-8318-fb2eb14e9557" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6318d41a-5b63-428e-8318-fb2eb14e9557" >
+						<logger level="ERROR" doc:name="log-error" doc:id="e2382ae4-b051-4f1b-bb6f-51d5c5b6dd6c" message='#["Inside Munits Error Handler"]' />
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -333,7 +344,9 @@
 			<try doc:name="Try" doc:id="fb3522a7-2827-4456-af56-da4acbd6b4ac" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="fa1995ba-9c51-4ed8-89ff-d8a3a15b5e83" name="oracle-inventory-extract-app-main" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6a88c954-4377-460a-881a-73d01fe8b0ae" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6a88c954-4377-460a-881a-73d01fe8b0ae" >
+						<logger level="ERROR" doc:name="log-error" doc:id="6cc6030e-652a-4f1e-97d6-405002eee2d9" message='#["Inside Munits Error Handler"]' />
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -349,20 +362,23 @@
 </munit:test>
 	<munit:test name="api-test-suite-oracle-inventory-extract-app-mock-invoke-error" doc:id="7ccb438c-28a5-416c-9c81-da9e36ac862d" description="Test">
 		<munit:behavior >
-			<munit-tools:mock-when doc:name="Mock read batch Impl ref" doc:id="997cf509-a3a9-4747-a9a7-3c2057f41b9b" processor="flow-ref">
+			<munit-tools:mock-when doc:name="Mock Error" doc:id="997cf509-a3a9-4747-a9a7-3c2057f41b9b" processor="when">
 				<munit-tools:with-attributes >
-					<munit-tools:with-attribute whereValue="Refer: batch-impl-flow" attributeName="doc:name" />
+					<munit-tools:with-attribute whereValue="false" attributeName="expression" />
 				</munit-tools:with-attributes>
 				<munit-tools:then-return >
-					<munit-tools:error typeId="ANY" />
+					<munit-tools:error typeId="MULE:EXPRESSION" />
 				</munit-tools:then-return>
-			</munit-tools:mock-when>
+			
+</munit-tools:mock-when>
 		</munit:behavior>
 		<munit:execution>
 			<try doc:name="Try" doc:id="e7c35feb-6c7c-4d4b-86c2-80f1f417ea23" >
 				<flow-ref doc:name="Flow-ref to oracle-inventory-extract-scheduler-flow" doc:id="6f61b1e7-9382-418c-b0e7-9989799d3e0e" name="inventory-extract-schedulerFlow" />
 				<error-handler >
-					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cde490b9-c9fe-4d61-b313-38f6968dfe9e" />
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cde490b9-c9fe-4d61-b313-38f6968dfe9e" >
+						<logger level="ERROR" doc:name="log-error" doc:id="71cc855d-bfef-4290-aa72-73dff5acf1ea" message='#["Inside Munits Error Handler"]' />
+					</on-error-continue>
 				</error-handler>
 			</try>
 		</munit:execution>
@@ -374,7 +390,33 @@
 			</munit-tools:verify-call>
 		</munit:validation>
 	</munit:test>
+	<munit:test name="api-test-suite-oracle-inventory-extract-app-mainTest1" doc:id="a4b90a80-597d-47d6-aeb3-3f7ec817940f" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock ApiKit" doc:id="3227aab1-c8ab-44b0-a0b7-040cd8944b56" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="oracle-inventory-extract-app-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-call flow="get:\invoke:oracle-inventory-extract-app-config" />
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="Mock Invoke" doc:id="12123a42-b462-44c0-a9c3-2eb11820b078" processor="flow-ref">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Refer : implm flow" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to oracle-inventory-extract-app-main" doc:id="91543bdd-6b81-4f69-9d9b-28e5c30911f0" name="oracle-inventory-extract-app-main"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="4b592372-9a68-4850-a8ef-a59391e74933" processor="flow">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="get:\invoke:oracle-inventory-extract-app-config" attributeName="name" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
 	
+
 
 
 </mule>
