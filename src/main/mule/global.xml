@@ -61,6 +61,6 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
 		<http:request-connection protocol="HTTPS" host="${sftp.sfcc.mockHttpServer}" />
 	</http:request-config>
 	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="53fffa25-c286-424c-b179-047988b8a9dc" file="config/config-${mule.env}.yaml" key="${mule.key}"/>
-	<!-- <api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="08604292-d2e8-493e-9e38-c539d00ac7aa" flowRef="oracle-inventory-extract-app-main" />
- -->
+	<api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="08604292-d2e8-493e-9e38-c539d00ac7aa" flowRef="oracle-inventory-extract-app-main" />
+
 </mule>
